@@ -2,17 +2,17 @@
 # User Options
 #===============================================================================
 
-COMPILER    = gnu
+COMPILER    = intel
 OPTIMIZE    = yes
-DEBUG       = no
+DEBUG       = yes
 PROFILE     = no
 MPI         = no
 PAPI        = no
-VEC_INFO    = no
+VEC_INFO    = yes
 VERIFY      = no
 BENCHMARK   = no
 BINARY_DUMP = no
-BINARY_READ = no
+BINARY_READ = yes
 
 #===============================================================================
 # Program name & source code list
@@ -49,7 +49,7 @@ endif
 # Intel Compiler
 ifeq ($(COMPILER),intel)
   CC = icc
-  CFLAGS += -openmp 
+  CFLAGS += -openmp -mmic
 endif
 
 # BG/Q gcc Cross-Compiler
@@ -59,7 +59,7 @@ endif
 
 # Debug Flags
 ifeq ($(DEBUG),yes)
-  CFLAGS += -g
+  CFLAGS += -g -vec-report=3
   LDFLAGS  += -g
 endif
 

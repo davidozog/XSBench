@@ -52,7 +52,7 @@ int main( int argc, char* argv[] )
 	if( mype == 0) printf("Generating Nuclide Energy Grids...\n");
 	#endif
 	
-	NuclideGridPoint ** nuclide_grids = gpmatrix(in.n_isotopes,in.n_gridpoints);
+	__attribute__ ((align(64))) NuclideGridPoint ** nuclide_grids = gpmatrix(in.n_isotopes,in.n_gridpoints);
 	
 	#ifdef VERIFICATION
 	generate_grids_v( nuclide_grids, in.n_isotopes, in.n_gridpoints );	
@@ -68,10 +68,10 @@ int main( int argc, char* argv[] )
 
 	// Prepare Unionized Energy Grid Framework
 	#ifndef BINARY_READ
-	GridPoint * energy_grid = generate_energy_grid( in.n_isotopes,
+	__attribute__ ((align(64))) GridPoint * energy_grid = generate_energy_grid( in.n_isotopes,
 	                          in.n_gridpoints, nuclide_grids ); 	
 	#else
-	GridPoint * energy_grid = (GridPoint *)malloc( in.n_isotopes *
+	__attribute__ ((align(64))) GridPoint * energy_grid = (GridPoint *)malloc( in.n_isotopes *
 	                           in.n_gridpoints * sizeof( GridPoint ) );
 	int * index_data = (int *) malloc( in.n_isotopes * in.n_gridpoints
 	                   * in.n_isotopes * sizeof(int));
@@ -155,7 +155,7 @@ int main( int argc, char* argv[] )
 		}
 		#endif
 
-		double macro_xs_vector[5];
+		__attribute__ ((align(64))) double macro_xs_vector[5];
 
 		// Initialize RNG seeds for threads
 		thread = omp_get_thread_num();

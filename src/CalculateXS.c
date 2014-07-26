@@ -13,9 +13,9 @@ void calculate_micro_xs(   double p_energy, int nuc, long n_isotopes,
 
 	// pull ptr from energy grid and check to ensure that
 	// we're not reading off the end of the nuclide's grid
-	if( energy_grid[idx].xs_ptrs[nuc] == n_gridpoints - 1 )
-		low = &nuclide_grids[nuc][energy_grid[idx].xs_ptrs[nuc] - 1];
-	else
+//	if( energy_grid[idx].xs_ptrs[nuc] == n_gridpoints - 1 )
+//		low = &nuclide_grids[nuc][energy_grid[idx].xs_ptrs[nuc] - 1];
+//	else
 		low = &nuclide_grids[nuc][energy_grid[idx].xs_ptrs[nuc]];
 	
 	high = low + 1;
@@ -27,16 +27,16 @@ void calculate_micro_xs(   double p_energy, int nuc, long n_isotopes,
 	xs_vector[0] = high->total_xs - f * (high->total_xs - low->total_xs);
 	
 	// Elastic XS
-	xs_vector[1] = high->elastic_xs - f * (high->elastic_xs - low->elastic_xs);
+	xs_vector[64] = high->elastic_xs - f * (high->elastic_xs - low->elastic_xs);
 	
 	// Absorbtion XS
-	xs_vector[2] = high->absorbtion_xs - f * (high->absorbtion_xs - low->absorbtion_xs);
+	xs_vector[128] = high->absorbtion_xs - f * (high->absorbtion_xs - low->absorbtion_xs);
 	
 	// Fission XS
-	xs_vector[3] = high->fission_xs - f * (high->fission_xs - low->fission_xs);
+	xs_vector[192] = high->fission_xs - f * (high->fission_xs - low->fission_xs);
 	
 	// Nu Fission XS
-	xs_vector[4] = high->nu_fission_xs - f * (high->nu_fission_xs - low->nu_fission_xs);
+	xs_vector[256] = high->nu_fission_xs - f * (high->nu_fission_xs - low->nu_fission_xs);
 	
 	//test
 	/*	
@@ -59,14 +59,16 @@ void calculate_macro_xs( double p_energy, int mat, long n_isotopes,
                          NuclideGridPoint ** restrict nuclide_grids,
                          int ** restrict mats,
                          double * restrict macro_xs_vector ){
-	double xs_vector[5];
+	__attribute__((align(64))) double xs_vector[320];
 	int p_nuc; // the nuclide we are looking up
 	long idx = 0;	
 	double conc; // the concentration of the nuclide in the material
 
 	// cleans out macro_xs_vector
-	for( int k = 0; k < 5; k++ )
+	for( int k = 0; k < 5; k++ ) {
+    //int slot = k*64;
 		macro_xs_vector[k] = 0;
+  }
 
 	// binary search for energy on unionized energy grid (UEG)
 	idx = grid_search( n_isotopes * n_gridpoints, p_energy,
@@ -79,6 +81,7 @@ void calculate_macro_xs( double p_energy, int mat, long n_isotopes,
 	// looked up & interpolatied (via calculate_micro_xs). Then, the
 	// micro XS is multiplied by the concentration of that nuclide
 	// in the material, and added to the total macro XS array.
+#pragma simd
 	for( int j = 0; j < num_nucs[mat]; j++ )
 	{
 		p_nuc = mats[mat][j];
@@ -86,9 +89,33 @@ void calculate_macro_xs( double p_energy, int mat, long n_isotopes,
 		calculate_micro_xs( p_energy, p_nuc, n_isotopes,
 		                    n_gridpoints, energy_grid,
 		                    nuclide_grids, idx, xs_vector );
-		for( int k = 0; k < 5; k++ )
+//			macro_xs_vector[0] += xs_vector[0] * conc;
+//			macro_xs_vector[1] += xs_vector[1] * conc;
+//			macro_xs_vector[2] += xs_vector[2] * conc;
+//			macro_xs_vector[3] += xs_vector[3] * conc;
+//			macro_xs_vector[4] += xs_vector[4] * conc;
+    #pragma vector nontemporal
+		for( int k = 0; k < 5; k++ ) {
+      //int slot = k*64;
 			macro_xs_vector[k] += xs_vector[k] * conc;
+    }
 	}
+
+//  #pragma simd
+//	for( int j = 0; j < num_nucs[mat]; j++ )
+//	{
+//		p_nuc = mats[mat][j];
+//		conc = concs[mat][j];
+//		calculate_micro_xs( p_energy, p_nuc, n_isotopes,
+//		                    n_gridpoints, energy_grid,
+//		                    nuclide_grids, idx, xs_vector );
+//		//for( int k = 0; k < 5; k++ )
+//			macro_xs_vector[0] += xs_vector[0] * conc;
+//			macro_xs_vector[1] += xs_vector[1] * conc;
+//			macro_xs_vector[2] += xs_vector[2] * conc;
+//			macro_xs_vector[3] += xs_vector[3] * conc;
+//			macro_xs_vector[4] += xs_vector[4] * conc;
+//	}
 	
 	//test
 	/*
