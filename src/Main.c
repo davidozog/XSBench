@@ -1,4 +1,6 @@
 #include "XSbench_header.h"
+//#include "ittnotify.h"
+
 
 #ifdef MPI
 #include<mpi.h>
@@ -17,6 +19,8 @@ int main( int argc, char* argv[] )
 	double omp_start, omp_end, p_energy;
 	unsigned long long vhash = 0;
 	int nprocs;
+
+//  __itt_pause();
 
 	#ifdef MPI
 	MPI_Status stat;
@@ -138,6 +142,8 @@ int main( int argc, char* argv[] )
 		exit(1);
 	}
 	#endif	
+
+//  __itt_resume();
 
 	// OpenMP compiler directives - declaring variables as shared or private
 	#pragma omp parallel default(none) \

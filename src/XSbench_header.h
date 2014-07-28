@@ -32,6 +32,15 @@ typedef struct{
 } NuclideGridPoint;
 
 typedef struct{
+	double *energy;
+	double *total_xs;
+	double *elastic_xs;
+	double *absorbtion_xs;
+	double *fission_xs;
+	double *nu_fission_xs;
+} NuclideGridPointSOA;
+
+typedef struct{
 	double energy;
 	int * xs_ptrs;
 } GridPoint;
@@ -80,8 +89,8 @@ void calculate_macro_xs(   double p_energy, int mat, long n_isotopes,
 						   int ** restrict mats,
                            double * restrict macro_xs_vector );
 
-void calculate_micro_xs(   double p_energy, int nuc, long n_isotopes,
-                           long n_gridpoints,
+void calculate_micro_xs(   double p_energy, int nuc, int prefetch_nuc, int prefetch_nuc0,
+                           long n_isotopes, long n_gridpoints,
                            GridPoint * restrict energy_grid,
                            NuclideGridPoint ** restrict nuclide_grids, int idx,
                            double * restrict xs_vector );

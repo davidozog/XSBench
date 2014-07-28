@@ -16,6 +16,22 @@ NuclideGridPoint ** gpmatrix(size_t m, size_t n)
 	return M;
 }
 
+// Allocates nuclide matrix (Struct of Array)
+NuclideGridPointSOA ** gpmatrixSOA(size_t m, size_t n)
+{
+	int i,j;
+	NuclideGridPointSOA * full = (NuclideGridPointSOA *) malloc( m * n *
+	                          sizeof( NuclideGridPointSOA ) );
+	NuclideGridPointSOA ** M = (NuclideGridPointSOA **) malloc( m *
+	                          sizeof(NuclideGridPointSOA *) );
+
+	for( i = 0, j=0; i < m*n; i++ )
+		if( i % n == 0 )
+			M[j++] = &full[i];
+
+	return M;
+}
+
 // Frees nuclide matrix
 void gpmatrix_free( NuclideGridPoint ** M )
 {
