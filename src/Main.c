@@ -172,10 +172,12 @@ int main( int argc, char* argv[] )
 		for( i = 0; i < in.lookups; i++ )
 		{
 			// Status text
+#ifdef STATUS
 			if( INFO && mype == 0 && thread == 0 && i % 1000 == 0 )
 				printf("\rCalculating XS's... (%.0lf%% completed)",
 						(i / ( (double)in.lookups / (double) in.nthreads ))
 						/ (double) in.nthreads * 100.0);
+#endif
 
 			// Randomly pick an energy and material for the particle
 			#ifdef VERIFICATION

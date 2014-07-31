@@ -12,7 +12,7 @@ VEC_INFO    = yes
 VERIFY      = no 
 BENCHMARK   = no
 BINARY_DUMP = no
-BINARY_READ = no
+BINARY_READ = yes
 
 #===============================================================================
 # Program name & source code list
@@ -63,8 +63,10 @@ ifeq ($(DEBUG),yes)
   #CFLAGS += -g -vec-report=3 -no-opt-prefetch -opt-report-phase hlo -opt-report=3
   #CFLAGS += -g -no-opt-prefetch -I/soft/compilers/intel/vtune_amplifier_xe_2013/include/ /soft/compilers/intel/vtune_amplifier_xe_2013/bin64/k1om/libittnotify.a
   #LDFLAGS  += -g -no-opt-prefetch -I/soft/compilers/intel/vtune_amplifier_xe_2013/include/ /soft/compilers/intel/vtune_amplifier_xe_2013/bin64/k1om/libittnotify.a
-  CFLAGS += -g -no-opt-prefetch 
-  LDFLAGS  += -g -no-opt-prefetch
+  CFLAGS += -g -no-opt-prefetch -I/soft/compilers/intel/vtune_amplifier_xe_2013/include/ /soft/compilers/intel/vtune_amplifier_xe_2013/lib64/libittnotify.a
+  LDFLAGS  += -g -no-opt-prefetch -I/soft/compilers/intel/vtune_amplifier_xe_2013/include/ /soft/compilers/intel/vtune_amplifier_xe_2013/lib64/libittnotify.a
+  #CFLAGS += -g -no-opt-prefetch 
+  #LDFLAGS  += -g -no-opt-prefetch
 endif
 
 # Profiling Flags
