@@ -16,10 +16,20 @@ NuclideGridPoint ** gpmatrix(size_t m, size_t n)
 	return M;
 }
 
+NuclideGridPoint_SOA * gpmatrix_SOA(size_t m, size_t n)
+{
+	NuclideGridPoint_SOA * full = (NuclideGridPoint_SOA *) malloc( sizeof( NuclideGridPoint_SOA ) );
+	return full;
+}
+
 // Frees nuclide matrix
 void gpmatrix_free( NuclideGridPoint ** M )
 {
 	free( *M );
+	free( M );
+}
+void gpmatrix_free_SOA( NuclideGridPoint_SOA * M )
+{
 	free( M );
 }
 
@@ -37,6 +47,29 @@ int NGP_compare( const void * a, const void * b )
 		return -1;
 	else
 		return 0;
+}
+
+//Struct-of-Array version:
+int NGP_compare_SOA( const void * a, const void * b )
+{
+	NuclideGridPoint *i, *j;
+
+	i = (NuclideGridPoint *) a;
+	j = (NuclideGridPoint *) b;
+
+	if( i->energy > j->energy )
+		return 1;
+	else if ( i->energy < j->energy)
+		return -1;
+	else
+		return 0;
+}
+
+int compare_double(const void *a, const void *b)
+{
+  if (*(double*)a > *(double*)b) return 1;
+  else if (*(double*)a < *(double*)b) return -1;
+  else return 0;  
 }
 
 
@@ -62,6 +95,33 @@ int binary_search( NuclideGridPoint * A, double quarry, int n )
 		if( A[mid].energy < quarry )
 			min = mid+1;
 		else if( A[mid].energy > quarry )
+			max = mid-1;
+		else
+			return mid;
+	}
+	return max;
+}
+
+// Struct-of-Array version
+int binary_search_SOA( double * A, double quarry, int n )
+{
+	int min = 0;
+	int max = n-1;
+	int mid;
+	
+	// checks to ensure we're not reading off the end of the grid
+	if( A[0] > quarry )
+		return 0;
+	else if( A[n-1] < quarry )
+		return n-2;
+	
+	// Begins binary search	
+	while( max >= min )
+	{
+		mid = min + floor( (max-min) / 2.0);
+		if( A[mid] < quarry )
+			min = mid+1;
+		else if( A[mid] > quarry )
 			max = mid-1;
 		else
 			return mid;

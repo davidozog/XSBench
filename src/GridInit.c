@@ -36,6 +36,38 @@ void generate_grids_v( NuclideGridPoint ** nuclide_grids,
 		}
 }
 
+// Verification version with MIC-friendly struct-of-array data structure
+void generate_grids_v_SOA( NuclideGridPoint_SOA * nuclide_grids,
+                     long n_isotopes, long n_gridpoints ) {
+
+  	double * energy = (double *) malloc( n_isotopes * n_gridpoints * sizeof(double) );
+  	double * total_xs = (double *) malloc( n_isotopes * n_gridpoints * sizeof(double) );
+  	double * elastic_xs = (double *) malloc( n_isotopes * n_gridpoints * sizeof(double) );
+  	double * absorbtion_xs = (double *) malloc( n_isotopes * n_gridpoints * sizeof(double) );
+  	double * fission_xs = (double *) malloc( n_isotopes * n_gridpoints * sizeof(double) );
+  	double * nu_fission_xs = (double *) malloc( n_isotopes * n_gridpoints * sizeof(double) );
+
+    nuclide_grids->energy = energy;
+    nuclide_grids->total_xs = total_xs;
+    nuclide_grids->elastic_xs = elastic_xs;
+    nuclide_grids->absorbtion_xs = absorbtion_xs;
+    nuclide_grids->fission_xs = fission_xs;
+    nuclide_grids->nu_fission_xs = nu_fission_xs;
+
+	  for( long i = 0; i < n_isotopes; i++ ) 
+    {
+	  	for( long j = 0; j < n_gridpoints; j++ )
+	  	{
+	  		nuclide_grids->energy[i*n_isotopes + j]        = rn_v();
+	  		nuclide_grids->total_xs[i*n_isotopes + j]      = rn_v();
+	  		nuclide_grids->elastic_xs[i*n_isotopes + j]    = rn_v();
+	  		nuclide_grids->absorbtion_xs[i*n_isotopes + j] = rn_v();
+	  		nuclide_grids->fission_xs[i*n_isotopes + j]    = rn_v();
+	  		nuclide_grids->nu_fission_xs[i*n_isotopes + j] = rn_v();
+	  	}
+    }
+}
+
 // Sorts the nuclide grids by energy (lowest -> highest)
 void sort_nuclide_grids( NuclideGridPoint ** nuclide_grids, long n_isotopes,
                          long n_gridpoints )
@@ -48,14 +80,40 @@ void sort_nuclide_grids( NuclideGridPoint ** nuclide_grids, long n_isotopes,
 		       cmp );
 	
 	// error debug check
-	/*
-	for( int i = 0; i < n_isotopes; i++ )
-	{
-		printf("NUCLIDE %d ==============================\n", i);
-		for( int j = 0; j < n_gridpoints; j++ )
-			printf("E%d = %lf\n", j, nuclide_grids[i][j].energy);
-	}
-	*/
+	//for( int i = 0; i < n_isotopes; i++ )
+	//{
+	//	printf("NUCLIDE %d ==============================\n", i);
+	//	for( int j = 0; j < n_gridpoints; j++ )
+	//		printf("e%d = %lf\n", j, nuclide_grids[i][j].energy);
+	//}
+}
+
+// Struct-of-Array version
+void sort_nuclide_grids_SOA( NuclideGridPoint_SOA * nuclide_grids, long n_isotopes,
+                         long n_gridpoints )
+{
+	int (*cmp) (const void *, const void *);
+	cmp = compare_double;
+
+	for( long i = 0; i < n_isotopes; i++ )
+  {
+
+    int idx = i*n_gridpoints;
+		qsort_SOA( &nuclide_grids->energy[idx], 
+               &nuclide_grids->total_xs[idx],
+               &nuclide_grids->elastic_xs[idx],
+               &nuclide_grids->absorbtion_xs[idx],
+               &nuclide_grids->fission_xs[idx],
+               &nuclide_grids->nu_fission_xs[idx],
+               n_gridpoints, sizeof(double), cmp );
+  }
+	// error debug check
+	//for( int i = 0; i < n_isotopes; i++ )
+	//{
+	//	printf("NUCLIDE %d ==============================\n", i);
+	//	for( int j = 0; j < n_gridpoints; j++ )
+	//		printf("E%d = %lf\n", j, nuclide_grids->energy[i*n_gridpoints+j]);
+	//}
 }
 
 // Allocates unionized energy grid, and assigns union of energy levels
@@ -86,7 +144,7 @@ GridPoint * generate_energy_grid( long n_isotopes, long n_gridpoints,
 	
 	qsort( &n_grid_sorted[0][0], n_unionized_grid_points,
 	       sizeof(NuclideGridPoint), cmp);
-	
+
 	if( mype == 0 ) printf("Assigning energies to unionized grid...\n");
 	
 	for( long i = 0; i < n_unionized_grid_points; i++ )
@@ -108,6 +166,115 @@ GridPoint * generate_energy_grid( long n_isotopes, long n_gridpoints,
 	*/
 
 	return energy_grid;
+}
+
+// Struct-of-Array version
+GridPoint * generate_energy_grid_SOA( long n_isotopes, long n_gridpoints,
+                                  NuclideGridPoint_SOA * nuclide_grids) {
+	int mype = 0;
+
+	#ifdef MPI
+	MPI_Comm_rank(MPI_COMM_WORLD, &mype);
+	#endif
+	
+	if( mype == 0 ) printf("Generating Unionized Energy Grid...\n");
+	
+	long n_unionized_grid_points = n_isotopes*n_gridpoints;
+	int (*cmp) (const void *, const void *);
+	cmp = compare_double;
+	
+	NuclideGridPoint_SOA * n_grid_sorted = gpmatrix_SOA( n_isotopes, n_gridpoints );
+	GridPoint * energy_grid = (GridPoint *)malloc( n_unionized_grid_points
+	                                               * sizeof( GridPoint ) );
+	if( mype == 0 ) printf("Copying and Sorting all nuclide grids...\n");
+	
+  double * energy = (double *) malloc( n_isotopes * n_gridpoints * sizeof(double) );
+  double * total_xs = (double *) malloc( n_isotopes * n_gridpoints * sizeof(double) );
+  double * elastic_xs = (double *) malloc( n_isotopes * n_gridpoints * sizeof(double) );
+  double * absorbtion_xs = (double *) malloc( n_isotopes * n_gridpoints * sizeof(double) );
+  double * fission_xs = (double *) malloc( n_isotopes * n_gridpoints * sizeof(double) );
+  double * nu_fission_xs = (double *) malloc( n_isotopes * n_gridpoints * sizeof(double) );
+
+  n_grid_sorted->total_xs = total_xs;
+  n_grid_sorted->elastic_xs = elastic_xs;
+  n_grid_sorted->absorbtion_xs = absorbtion_xs;
+  n_grid_sorted->fission_xs = fission_xs;
+  n_grid_sorted->nu_fission_xs = nu_fission_xs;
+	  	
+	memcpy( energy, nuclide_grids->energy, 
+                                        n_isotopes*n_gridpoints*sizeof( double ) );
+	memcpy( n_grid_sorted->total_xs, nuclide_grids->total_xs, 
+                                        n_isotopes*n_gridpoints*sizeof( double ) );
+	memcpy( n_grid_sorted->elastic_xs, nuclide_grids->elastic_xs, 
+                                        n_isotopes*n_gridpoints*sizeof( double ) );
+	memcpy( n_grid_sorted->absorbtion_xs, nuclide_grids->absorbtion_xs, 
+                                        n_isotopes*n_gridpoints*sizeof( double ) );
+	memcpy( n_grid_sorted->fission_xs, nuclide_grids->fission_xs, 
+                                        n_isotopes*n_gridpoints*sizeof( double ) );
+	memcpy( n_grid_sorted->nu_fission_xs, nuclide_grids->nu_fission_xs, 
+                                        n_isotopes*n_gridpoints*sizeof( double ) );
+	
+	qsort_SOA( &energy[0], 
+      &n_grid_sorted->total_xs[0],
+      &n_grid_sorted->elastic_xs[0],
+      &n_grid_sorted->absorbtion_xs[0],
+      &n_grid_sorted->fission_xs[0],
+      &n_grid_sorted->nu_fission_xs[0],
+      n_unionized_grid_points, sizeof(double), cmp);
+
+	if( mype == 0 ) printf("Assigning energies to unionized grid...\n");
+	
+	for( long i = 0; i < n_unionized_grid_points; i++ )
+		energy_grid[i].energy = energy[i];
+
+	int * full = (int *) malloc( n_isotopes * n_unionized_grid_points * sizeof(int) );
+	
+	for( long i = 0; i < n_unionized_grid_points; i++ )
+		energy_grid[i].xs_ptrs = &full[n_isotopes * i];
+	
+	// debug error checking
+	/*
+	for( int i = 0; i < n_unionized_grid_points; i++ )
+		printf("E%d = %lf\n", i, energy_grid[i].energy);
+	*/
+
+	return energy_grid;
+}
+
+void copy_AOS_to_SOA(GridPoint *energy_grid, GridPoint *energy_grid_SOA, 
+           NuclideGridPoint **nuclide_grids, NuclideGridPoint_SOA *nuclide_grids_SOA, 
+           int n_isotopes, int n_gridpoints) 
+{
+
+  double * energy = (double *) malloc( n_isotopes * n_gridpoints * sizeof(double) );
+  double * total_xs = (double *) malloc( n_isotopes * n_gridpoints * sizeof(double) );
+  double * elastic_xs = (double *) malloc( n_isotopes * n_gridpoints * sizeof(double) );
+  double * absorbtion_xs = (double *) malloc( n_isotopes * n_gridpoints * sizeof(double) );
+  double * fission_xs = (double *) malloc( n_isotopes * n_gridpoints * sizeof(double) );
+  double * nu_fission_xs = (double *) malloc( n_isotopes * n_gridpoints * sizeof(double) );
+
+  nuclide_grids_SOA->energy = energy;
+  nuclide_grids_SOA->total_xs = total_xs;
+  nuclide_grids_SOA->elastic_xs = elastic_xs;
+  nuclide_grids_SOA->absorbtion_xs = absorbtion_xs;
+  nuclide_grids_SOA->fission_xs = fission_xs;
+  nuclide_grids_SOA->nu_fission_xs = nu_fission_xs;
+
+  for (int i=0; i<n_isotopes; i++)
+  {
+    for (int j=0; j<n_gridpoints; j++)
+    {
+      nuclide_grids_SOA->energy[i*n_gridpoints + j] = nuclide_grids[i][j].energy;
+      nuclide_grids_SOA->total_xs[i*n_gridpoints + j] = nuclide_grids[i][j].total_xs;
+      nuclide_grids_SOA->elastic_xs[i*n_gridpoints + j] = nuclide_grids[i][j].elastic_xs;
+      nuclide_grids_SOA->absorbtion_xs[i*n_gridpoints + j] = nuclide_grids[i][j].absorbtion_xs;
+      nuclide_grids_SOA->fission_xs[i*n_gridpoints + j] = nuclide_grids[i][j].fission_xs;
+      nuclide_grids_SOA->nu_fission_xs[i*n_gridpoints + j] = nuclide_grids[i][j].nu_fission_xs;
+    }
+  }
+
+  // TODO: create a SOA for energy_grid...
+
 }
 
 // Searches each nuclide grid for the closest energy level and assigns
@@ -154,4 +321,47 @@ void set_grid_ptrs( GridPoint * energy_grid, NuclideGridPoint ** nuclide_grids,
 				   (energy_grid[i].xs_ptrs[j])->energy
 				   );
 	*/
+}
+
+// Struct-of-Array version
+void set_grid_ptrs_SOA( GridPoint * energy_grid, NuclideGridPoint_SOA * nuclide_grids,
+                    long n_isotopes, long n_gridpoints )
+{
+	int mype = 0;
+
+	#ifdef MPI
+	MPI_Comm_rank(MPI_COMM_WORLD, &mype);
+	#endif
+	
+	if( mype == 0 ) printf("Assigning pointers to Unionized Energy Grid...\n");
+	#pragma omp parallel for default(none) \
+	shared( energy_grid, nuclide_grids, n_isotopes, n_gridpoints, mype )
+	for( long i = 0; i < n_isotopes * n_gridpoints ; i++ )
+	{
+		double quarry = energy_grid[i].energy;
+		if( INFO && mype == 0 && omp_get_thread_num() == 0 && i % 200 == 0 )
+			printf("\rAligning Unionized Grid...(%.0lf%% complete)",
+			       100.0 * (double) i / (n_isotopes*n_gridpoints /
+				                         omp_get_num_threads())     );
+		for( long j = 0; j < n_isotopes; j++ )
+		{
+			// j is the nuclide i.d.
+			// log n binary search
+			energy_grid[i].xs_ptrs[j] = 
+				binary_search_SOA( &nuclide_grids->energy[j*n_gridpoints], quarry, n_gridpoints);
+		}
+	}
+	if( mype == 0 ) printf("\n");
+
+	////test
+	///*
+	//for( int i=0; i < n_isotopes * n_gridpoints; i++ )
+	//	for( int j = 0; j < n_isotopes; j++ )
+	//		printf("E = %.4lf\tNuclide %d->%p->%.4lf\n",
+	//		       energy_grid[i].energy,
+  //                 j,
+	//			   energy_grid[i].xs_ptrs[j],
+	//			   (energy_grid[i].xs_ptrs[j])->energy
+	//			   );
+	//*/
 }

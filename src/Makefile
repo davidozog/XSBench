@@ -2,14 +2,14 @@
 # User Options
 #===============================================================================
 
-COMPILER    = gnu
-OPTIMIZE    = yes
-DEBUG       = no
+COMPILER    = intel
+OPTIMIZE    = no
+DEBUG       = yes
 PROFILE     = no
 MPI         = no
 PAPI        = no
 VEC_INFO    = no
-VERIFY      = no
+VERIFY      = yes
 BENCHMARK   = no
 BINARY_DUMP = no
 BINARY_READ = no
@@ -24,6 +24,7 @@ source = \
 Main.c \
 io.c \
 CalculateXS.c \
+qsort_SOA.c \
 GridInit.c \
 XSutils.c \
 Materials.c
@@ -49,7 +50,9 @@ endif
 # Intel Compiler
 ifeq ($(COMPILER),intel)
   CC = icc
-  CFLAGS += -openmp 
+  #CFLAGS += -openmp -mmic -vec-report=3
+  #CFLAGS += -openmp -mmic
+  CFLAGS += -openmp
 endif
 
 # BG/Q gcc Cross-Compiler

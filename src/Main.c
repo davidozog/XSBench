@@ -53,9 +53,11 @@ int main( int argc, char* argv[] )
 	#endif
 	
 	NuclideGridPoint ** nuclide_grids = gpmatrix(in.n_isotopes,in.n_gridpoints);
+	NuclideGridPoint_SOA * nuclide_grids_SOA = gpmatrix_SOA(in.n_isotopes,in.n_gridpoints);
 	
 	#ifdef VERIFICATION
 	generate_grids_v( nuclide_grids, in.n_isotopes, in.n_gridpoints );	
+	//generate_grids_v_SOA( nuclide_grids_SOA, in.n_isotopes, in.n_gridpoints );	
 	#else
 	generate_grids( nuclide_grids, in.n_isotopes, in.n_gridpoints );	
 	#endif
@@ -64,12 +66,15 @@ int main( int argc, char* argv[] )
 	#ifndef BINARY_READ
 	if( mype == 0) printf("Sorting Nuclide Energy Grids...\n");
 	sort_nuclide_grids( nuclide_grids, in.n_isotopes, in.n_gridpoints );
+	//sort_nuclide_grids_SOA( nuclide_grids_SOA, in.n_isotopes, in.n_gridpoints );
 	#endif
 
 	// Prepare Unionized Energy Grid Framework
 	#ifndef BINARY_READ
 	GridPoint * energy_grid = generate_energy_grid( in.n_isotopes,
 	                          in.n_gridpoints, nuclide_grids ); 	
+	//GridPoint * energy_grid_SOA = generate_energy_grid_SOA( in.n_isotopes,
+	//                          in.n_gridpoints, nuclide_grids_SOA ); 	
 	#else
 	GridPoint * energy_grid = (GridPoint *)malloc( in.n_isotopes *
 	                           in.n_gridpoints * sizeof( GridPoint ) );
@@ -83,7 +88,12 @@ int main( int argc, char* argv[] )
 	// nuclide_energy_grids.
 	#ifndef BINARY_READ
 	set_grid_ptrs( energy_grid, nuclide_grids, in.n_isotopes, in.n_gridpoints );
+	//set_grid_ptrs_SOA( energy_grid_SOA, nuclide_grids_SOA, in.n_isotopes, in.n_gridpoints );
 	#endif
+  
+  GridPoint * energy_grid_SOA;
+  copy_AOS_to_SOA(energy_grid, energy_grid_SOA, nuclide_grids, nuclide_grids_SOA, 
+                  in.n_isotopes, in.n_gridpoints);
 
 	#ifdef BINARY_READ
 	if( mype == 0 ) printf("Reading data from \"XS_data.dat\" file...\n");
@@ -142,7 +152,7 @@ int main( int argc, char* argv[] )
 	// OpenMP compiler directives - declaring variables as shared or private
 	#pragma omp parallel default(none) \
 	private(i, thread, p_energy, mat, seed) \
-	shared( max_procs, in, energy_grid, nuclide_grids, \
+	shared( max_procs, in, energy_grid, energy_grid_SOA, nuclide_grids, nuclide_grids_SOA, \
 	        mats, concs, num_nucs, mype, vhash) 
 	{	
 		// Initialize parallel PAPI counters
@@ -189,9 +199,13 @@ int main( int argc, char* argv[] )
 			// This returns the macro_xs_vector, but we're not going
 			// to do anything with it in this program, so return value
 			// is written over.
-			calculate_macro_xs( p_energy, mat, in.n_isotopes,
+			//calculate_macro_xs( p_energy, mat, in.n_isotopes,
+			//                    in.n_gridpoints, num_nucs, concs,
+			//                    energy_grid, nuclide_grids, mats,
+      //                          macro_xs_vector );
+			calculate_macro_xs_SOA( p_energy, mat, in.n_isotopes,
 			                    in.n_gridpoints, num_nucs, concs,
-			                    energy_grid, nuclide_grids, mats,
+			                    energy_grid, energy_grid_SOA, nuclide_grids, nuclide_grids_SOA, mats,
                                 macro_xs_vector );
 
 			// Verification hash calculation
