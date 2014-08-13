@@ -3,13 +3,13 @@
 #===============================================================================
 
 COMPILER    = intel
-OPTIMIZE    = no
+OPTIMIZE    = yes
 DEBUG       = yes
 PROFILE     = no
 MPI         = no
 PAPI        = no
 VEC_INFO    = no
-VERIFY      = yes
+VERIFY      = no
 BENCHMARK   = no
 BINARY_DUMP = no
 BINARY_READ = no
@@ -52,7 +52,7 @@ ifeq ($(COMPILER),intel)
   CC = icc
   #CFLAGS += -openmp -mmic -vec-report=3
   #CFLAGS += -openmp -mmic
-  CFLAGS += -openmp
+  CFLAGS += -openmp -vec-report=3 #-no-opt-prefetch
 endif
 
 # BG/Q gcc Cross-Compiler
@@ -64,6 +64,8 @@ endif
 ifeq ($(DEBUG),yes)
   CFLAGS += -g
   LDFLAGS  += -g
+	#CFLAGS += -g -I/soft/compilers/intel/vtune_amplifier_xe_2013/include/ /soft/compilers/intel/vtune_amplifier_xe_2013/lib64/libittnotify.a
+	#LDFLAGS  += -g -I/soft/compilers/intel/vtune_amplifier_xe_2013/include/ /soft/compilers/intel/vtune_amplifier_xe_2013/lib64/libittnotify.a
 endif
 
 # Profiling Flags

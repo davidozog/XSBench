@@ -40,12 +40,12 @@ void generate_grids_v( NuclideGridPoint ** nuclide_grids,
 void generate_grids_v_SOA( NuclideGridPoint_SOA * nuclide_grids,
                      long n_isotopes, long n_gridpoints ) {
 
-  	double * energy = (double *) malloc( n_isotopes * n_gridpoints * sizeof(double) );
-  	double * total_xs = (double *) malloc( n_isotopes * n_gridpoints * sizeof(double) );
-  	double * elastic_xs = (double *) malloc( n_isotopes * n_gridpoints * sizeof(double) );
-  	double * absorbtion_xs = (double *) malloc( n_isotopes * n_gridpoints * sizeof(double) );
-  	double * fission_xs = (double *) malloc( n_isotopes * n_gridpoints * sizeof(double) );
-  	double * nu_fission_xs = (double *) malloc( n_isotopes * n_gridpoints * sizeof(double) );
+  	double * energy = (double *) _mm_malloc( n_isotopes * n_gridpoints * sizeof(double), 64 );
+  	double * total_xs = (double *) _mm_malloc( n_isotopes * n_gridpoints * sizeof(double), 64 );
+  	double * elastic_xs = (double *) _mm_malloc( n_isotopes * n_gridpoints * sizeof(double), 64 );
+  	double * absorbtion_xs = (double *) _mm_malloc( n_isotopes * n_gridpoints * sizeof(double), 64 );
+  	double * fission_xs = (double *) _mm_malloc( n_isotopes * n_gridpoints * sizeof(double), 64 );
+  	double * nu_fission_xs = (double *) _mm_malloc( n_isotopes * n_gridpoints * sizeof(double), 64 );
 
     nuclide_grids->energy = energy;
     nuclide_grids->total_xs = total_xs;
@@ -241,17 +241,17 @@ GridPoint * generate_energy_grid_SOA( long n_isotopes, long n_gridpoints,
 	return energy_grid;
 }
 
-void copy_AOS_to_SOA(GridPoint *energy_grid, GridPoint *energy_grid_SOA, 
+void copy_AOS_to_SOA(GridPoint *energy_grid, GridPoint_SOA **energy_grid_SOA, 
            NuclideGridPoint **nuclide_grids, NuclideGridPoint_SOA *nuclide_grids_SOA, 
            int n_isotopes, int n_gridpoints) 
 {
 
-  double * energy = (double *) malloc( n_isotopes * n_gridpoints * sizeof(double) );
-  double * total_xs = (double *) malloc( n_isotopes * n_gridpoints * sizeof(double) );
-  double * elastic_xs = (double *) malloc( n_isotopes * n_gridpoints * sizeof(double) );
-  double * absorbtion_xs = (double *) malloc( n_isotopes * n_gridpoints * sizeof(double) );
-  double * fission_xs = (double *) malloc( n_isotopes * n_gridpoints * sizeof(double) );
-  double * nu_fission_xs = (double *) malloc( n_isotopes * n_gridpoints * sizeof(double) );
+  double * energy = (double *) _mm_malloc( n_isotopes * n_gridpoints * sizeof(double), 64 );
+  double * total_xs = (double *) _mm_malloc( n_isotopes * n_gridpoints * sizeof(double), 64 );
+  double * elastic_xs = (double *) _mm_malloc( n_isotopes * n_gridpoints * sizeof(double), 64 );
+  double * absorbtion_xs = (double *) _mm_malloc( n_isotopes * n_gridpoints * sizeof(double), 64 );
+  double * fission_xs = (double *) _mm_malloc( n_isotopes * n_gridpoints * sizeof(double), 64 );
+  double * nu_fission_xs = (double *) _mm_malloc( n_isotopes * n_gridpoints * sizeof(double), 64 );
 
   nuclide_grids_SOA->energy = energy;
   nuclide_grids_SOA->total_xs = total_xs;
@@ -273,8 +273,19 @@ void copy_AOS_to_SOA(GridPoint *energy_grid, GridPoint *energy_grid_SOA,
     }
   }
 
-  // TODO: create a SOA for energy_grid...
+  long n_unionized_grid_points = n_isotopes*n_gridpoints;
+  double * e_grid = (double *) _mm_malloc( n_unionized_grid_points * sizeof(double), 64 );
+  int * xs_ptrs = (int *) _mm_malloc( n_unionized_grid_points * n_isotopes * sizeof(int), 64 );
 
+  (*energy_grid_SOA) = (GridPoint_SOA *) _mm_malloc( sizeof(GridPoint_SOA), 64 );
+  (*energy_grid_SOA)->energy = e_grid;
+  (*energy_grid_SOA)->xs_ptrs = xs_ptrs;
+
+	for( long i = 0; i < n_isotopes * n_gridpoints ; i++ )
+  {
+    (*energy_grid_SOA)->energy[i] = energy_grid[i].energy; 
+    memcpy(&(*energy_grid_SOA)->xs_ptrs[i*n_isotopes], energy_grid[i].xs_ptrs, n_isotopes*sizeof(int));
+  }
 }
 
 // Searches each nuclide grid for the closest energy level and assigns

@@ -46,6 +46,11 @@ typedef struct{
 } GridPoint;
 
 typedef struct{
+	double *energy;
+	int * xs_ptrs;
+} GridPoint_SOA;
+
+typedef struct{
 	int nthreads;
 	long n_isotopes;
 	long n_gridpoints;
@@ -105,7 +110,7 @@ void calculate_macro_xs_SOA(   double p_energy, int mat, long n_isotopes,
                            long n_gridpoints, int * restrict num_nucs,
                            double ** restrict concs,
 						   GridPoint * restrict energy_grid,
-						   GridPoint * restrict energy_grid_SOA,
+						   GridPoint_SOA * restrict energy_grid_SOA,
                            NuclideGridPoint ** restrict nuclide_grids,
                            NuclideGridPoint_SOA * restrict nuclide_grids_SOA,
 						   int ** restrict mats,
@@ -119,13 +124,14 @@ void calculate_micro_xs(   double p_energy, int nuc, long n_isotopes,
 void calculate_micro_xs_SOA(   double p_energy, int nuc, long n_isotopes,
                            long n_gridpoints,
                            GridPoint * restrict energy_grid,
-                           GridPoint * restrict energy_grid_SOA,
+                           GridPoint_SOA * restrict energy_grid_SOA,
                            NuclideGridPoint ** restrict nuclide_grids, 
                            NuclideGridPoint_SOA * restrict nuclide_grids_SOA, 
                            int idx,
                            double * restrict xs_vector );
 
 long grid_search( long n, double quarry, GridPoint * A);
+long grid_search_SOA( long n, double quarry, GridPoint_SOA * A);
 
 int * load_num_nucs(long n_isotopes);
 int ** load_mats( int * num_nucs, long n_isotopes );
@@ -158,7 +164,7 @@ void qsort_SOA(double *base,
                double *base5,
     unsigned num, unsigned width, int (*comp)(const void *, const void *));
 
-void copy_AOS_to_SOA(GridPoint *energy_grid, GridPoint *energy_grid_SOA, 
+void copy_AOS_to_SOA(GridPoint *energy_grid, GridPoint_SOA **energy_grid_SOA, 
            NuclideGridPoint **nuclide_grids, NuclideGridPoint_SOA *nuclide_grids_SOA, 
            int n_isotopes, int n_gridpoints);
 

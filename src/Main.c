@@ -1,4 +1,5 @@
 #include "XSbench_header.h"
+//#include "ittnotify.h"
 
 #ifdef MPI
 #include<mpi.h>
@@ -17,6 +18,8 @@ int main( int argc, char* argv[] )
 	double omp_start, omp_end, p_energy;
 	unsigned long long vhash = 0;
 	int nprocs;
+
+//__itt_pause();
 
 	#ifdef MPI
 	MPI_Status stat;
@@ -91,10 +94,6 @@ int main( int argc, char* argv[] )
 	//set_grid_ptrs_SOA( energy_grid_SOA, nuclide_grids_SOA, in.n_isotopes, in.n_gridpoints );
 	#endif
   
-  GridPoint * energy_grid_SOA;
-  copy_AOS_to_SOA(energy_grid, energy_grid_SOA, nuclide_grids, nuclide_grids_SOA, 
-                  in.n_isotopes, in.n_gridpoints);
-
 	#ifdef BINARY_READ
 	if( mype == 0 ) printf("Reading data from \"XS_data.dat\" file...\n");
 	binary_read(in.n_isotopes, in.n_gridpoints, nuclide_grids, energy_grid);
@@ -139,6 +138,10 @@ int main( int argc, char* argv[] )
 		border_print();
 	}
 
+  GridPoint_SOA * energy_grid_SOA;
+  copy_AOS_to_SOA(energy_grid, &energy_grid_SOA, nuclide_grids, nuclide_grids_SOA, 
+                  in.n_isotopes, in.n_gridpoints);
+
 	omp_start = omp_get_wtime();
   
 	//initialize papi with one thread (master) here
@@ -148,6 +151,8 @@ int main( int argc, char* argv[] )
 		exit(1);
 	}
 	#endif	
+
+//__itt_resume();
 
 	// OpenMP compiler directives - declaring variables as shared or private
 	#pragma omp parallel default(none) \
@@ -205,7 +210,8 @@ int main( int argc, char* argv[] )
       //                          macro_xs_vector );
 			calculate_macro_xs_SOA( p_energy, mat, in.n_isotopes,
 			                    in.n_gridpoints, num_nucs, concs,
-			                    energy_grid, energy_grid_SOA, nuclide_grids, nuclide_grids_SOA, mats,
+			                    energy_grid, energy_grid_SOA, 
+                          nuclide_grids, nuclide_grids_SOA, mats,
                                 macro_xs_vector );
 
 			// Verification hash calculation

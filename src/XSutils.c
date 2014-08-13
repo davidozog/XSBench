@@ -18,7 +18,7 @@ NuclideGridPoint ** gpmatrix(size_t m, size_t n)
 
 NuclideGridPoint_SOA * gpmatrix_SOA(size_t m, size_t n)
 {
-	NuclideGridPoint_SOA * full = (NuclideGridPoint_SOA *) malloc( sizeof( NuclideGridPoint_SOA ) );
+	NuclideGridPoint_SOA * full = (NuclideGridPoint_SOA *) _mm_malloc( sizeof( NuclideGridPoint_SOA ), 64 );
 	return full;
 }
 
